@@ -1,22 +1,56 @@
 # docker-laravel
 
-Multi-version PHP + Nginx Docker image optimized for Laravel (9 – 13).
+A **runtime environment** for Laravel applications — not Laravel itself.
 
-The image provides **PHP-FPM, Nginx, Composer, Node.js, Bun**, and common PHP extensions out of the box.  
-It does **not** contain any Laravel code — mount your project at `/var/www/html`.
+This image provides everything a Laravel app needs to run: PHP-FPM, Nginx, Composer, Node.js, and a curated set of PHP extensions and system tools. Mount your Laravel project at `/var/www/html` and you're ready to go.
 
-## Supported PHP Versions
+Built for PHP 7.4 through 8.5, covering Laravel 9 – 13.
 
-| Tag | PHP | Laravel |
-|-----|-----|---------|
-| `php7.4` | 7.4 | Legacy (< 9) |
-| `php8.0` | 8.0 | 9 |
-| `php8.1` | 8.1 | 9, 10 |
-| `php8.2` | 8.2 | 9, 10, 11, 12 |
-| `php8.3` | 8.3 | 10, 11, 12, 13 |
-| `php8.4` | 8.4 | 11, 12, 13 |
-| `php8.5` | 8.5 | 12, 13 |
-| `latest` | 8.4 | (alias) |
+## Available Tags
+
+### By PHP version
+
+| Tag | PHP | Suitable for Laravel |
+|-----|-----|----------------------|
+| `blaxsoftware/laravel:php7.4` | 7.4 | Legacy (< 9) |
+| `blaxsoftware/laravel:php8.0` | 8.0 | 9 |
+| `blaxsoftware/laravel:php8.1` | 8.1 | 9, 10 |
+| `blaxsoftware/laravel:php8.2` | 8.2 | 9, 10, 11, 12 |
+| `blaxsoftware/laravel:php8.3` | 8.3 | 10, 11, 12, 13 |
+| `blaxsoftware/laravel:php8.4` | 8.4 | 11, 12, 13 |
+| `blaxsoftware/laravel:php8.5` | 8.5 | 12, 13 |
+| `blaxsoftware/laravel:latest` | 8.4 | (alias for php8.4) |
+
+### By Laravel version (recommended PHP)
+
+| Tag | Points to |
+|-----|-----------|
+| `blaxsoftware/laravel:laravel9` | php8.1 |
+| `blaxsoftware/laravel:laravel10` | php8.3 |
+| `blaxsoftware/laravel:laravel11` | php8.4 |
+| `blaxsoftware/laravel:laravel12` | php8.5 |
+| `blaxsoftware/laravel:laravel13` | php8.5 |
+
+### Combo tags (specific PHP + Laravel)
+
+```
+blaxsoftware/laravel:laravel9-php8.0
+blaxsoftware/laravel:laravel9-php8.1
+blaxsoftware/laravel:laravel9-php8.2
+blaxsoftware/laravel:laravel10-php8.1
+blaxsoftware/laravel:laravel10-php8.2
+blaxsoftware/laravel:laravel10-php8.3
+blaxsoftware/laravel:laravel11-php8.2
+blaxsoftware/laravel:laravel11-php8.3
+blaxsoftware/laravel:laravel11-php8.4
+blaxsoftware/laravel:laravel12-php8.2
+blaxsoftware/laravel:laravel12-php8.3
+blaxsoftware/laravel:laravel12-php8.4
+blaxsoftware/laravel:laravel12-php8.5
+blaxsoftware/laravel:laravel13-php8.3
+blaxsoftware/laravel:laravel13-php8.4
+blaxsoftware/laravel:laravel13-php8.5
+```
 
 ## Quick Start
 
