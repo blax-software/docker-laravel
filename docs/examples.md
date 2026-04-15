@@ -194,17 +194,17 @@ services:
 
 ## plug-n-pray.sh Options
 
-| Flag | Default | Description |
-|------|---------|-------------|
-| `--php=VERSION` | `8.4` | PHP version |
-| `--name=NAME` | directory name | Project name (used for container names & Traefik router) |
-| `--host=HOST` | `NAME.localhost` | Traefik hostname |
-| `--db=NAME` | project name | MySQL database name |
-| `--db-pass=PASS` | `secret` | MySQL root password |
-| `--image=IMAGE` | `blaxsoftware/laravel` | Docker image |
-| `--no-queue` | — | Disable queue worker |
-| `--no-scheduler` | — | Disable scheduler |
-| `--horizon` | — | Enable Horizon (auto-disables basic queue) |
-| `--no-redis` | — | Skip Redis service |
-| `--no-mysql` | — | Skip MySQL service |
-| `--force` | — | Overwrite existing files |
+| Flag             | Default                | Description                                              |
+|------------------|------------------------|----------------------------------------------------------|
+| `--php=VERSION`  | `8.4`                  | PHP version                                              |
+| `--name=NAME`    | directory name         | Project name (used for container names & Traefik router) |
+| `--host=HOST`    | `NAME.localhost`       | Traefik hostname                                         |
+| `--db=NAME`      | project name           | MySQL database name                                      |
+| `--db-pass=PASS` | `secret`               | MySQL root password                                      |
+| `--image=IMAGE`  | `blaxsoftware/laravel` | Docker image                                             |
+| `--no-queue`     | —                      | Disable queue worker                                     |
+| `--no-scheduler` | —                      | Disable scheduler                                        |
+| `--horizon`      | —                      | Enable Horizon (auto-disables basic queue)               |
+| `--no-redis`     | —                      | Skip Redis service                                       |
+| `--no-mysql`     | —                      | Skip MySQL service                                       |
+| `--force`        | —                      | Overwrite existing files                                 |

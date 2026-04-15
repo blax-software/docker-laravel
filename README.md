@@ -10,26 +10,26 @@ Built for PHP 7.4 through 8.5, covering Laravel 9 – 13.
 
 ### By PHP version
 
-| Tag | PHP | Suitable for Laravel |
-|-----|-----|----------------------|
-| `blaxsoftware/laravel:php7.4` | 7.4 | Legacy (< 9) |
-| `blaxsoftware/laravel:php8.0` | 8.0 | 9 |
-| `blaxsoftware/laravel:php8.1` | 8.1 | 9, 10 |
-| `blaxsoftware/laravel:php8.2` | 8.2 | 9, 10, 11, 12 |
-| `blaxsoftware/laravel:php8.3` | 8.3 | 10, 11, 12, 13 |
-| `blaxsoftware/laravel:php8.4` | 8.4 | 11, 12, 13 |
-| `blaxsoftware/laravel:php8.5` | 8.5 | 12, 13 |
-| `blaxsoftware/laravel:latest` | 8.4 | (alias for php8.4) |
+| Tag                           | PHP | Suitable for Laravel |
+|-------------------------------|-----|----------------------|
+| `blaxsoftware/laravel:php7.4` | 7.4 | Legacy (< 9)         |
+| `blaxsoftware/laravel:php8.0` | 8.0 | 9                    |
+| `blaxsoftware/laravel:php8.1` | 8.1 | 9, 10                |
+| `blaxsoftware/laravel:php8.2` | 8.2 | 9, 10, 11, 12        |
+| `blaxsoftware/laravel:php8.3` | 8.3 | 10, 11, 12, 13       |
+| `blaxsoftware/laravel:php8.4` | 8.4 | 11, 12, 13           |
+| `blaxsoftware/laravel:php8.5` | 8.5 | 12, 13               |
+| `blaxsoftware/laravel:latest` | 8.4 | (alias for php8.4)   |
 
 ### By Laravel version (recommended PHP)
 
-| Tag | Points to |
-|-----|-----------|
-| `blaxsoftware/laravel:laravel9` | php8.1 |
-| `blaxsoftware/laravel:laravel10` | php8.3 |
-| `blaxsoftware/laravel:laravel11` | php8.4 |
-| `blaxsoftware/laravel:laravel12` | php8.5 |
-| `blaxsoftware/laravel:laravel13` | php8.5 |
+| Tag                              | Points to |
+|----------------------------------|-----------|
+| `blaxsoftware/laravel:laravel9`  | php8.1    |
+| `blaxsoftware/laravel:laravel10` | php8.3    |
+| `blaxsoftware/laravel:laravel11` | php8.4    |
+| `blaxsoftware/laravel:laravel12` | php8.5    |
+| `blaxsoftware/laravel:laravel13` | php8.5    |
 
 ### Combo tags (specific PHP + Laravel)
 
@@ -108,19 +108,19 @@ services:
 
 ## Build Args
 
-| Arg | Default | Description |
-|-----|---------|-------------|
-| `PHP_VERSION` | `8.4` | PHP version (7.4, 8.0 – 8.5) |
-| `NODE_MAJOR` | `22` | Node.js major version |
+| Arg           | Default | Description                  |
+|---------------|---------|------------------------------|
+| `PHP_VERSION` | `8.4`   | PHP version (7.4, 8.0 – 8.5) |
+| `NODE_MAJOR`  | `22`    | Node.js major version        |
 
 ## Runtime Environment Variables
 
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `ENABLE_QUEUE` | `false` | Start `artisan queue:work` via supervisor |
-| `ENABLE_SCHEDULER` | `false` | Start `artisan schedule:work` via supervisor |
-| `ENABLE_HORIZON` | `false` | Start `artisan horizon` via supervisor |
-| `ENABLE_LARAVEL_PERMS` | `0` | Fix `storage/` and `bootstrap/cache/` permissions on boot |
+| Variable               | Default | Description                                               |
+|------------------------|---------|-----------------------------------------------------------|
+| `ENABLE_QUEUE`         | `false` | Start `artisan queue:work` via supervisor                 |
+| `ENABLE_SCHEDULER`     | `false` | Start `artisan schedule:work` via supervisor              |
+| `ENABLE_HORIZON`       | `false` | Start `artisan horizon` via supervisor                    |
+| `ENABLE_LARAVEL_PERMS` | `0`     | Fix `storage/` and `bootstrap/cache/` permissions on boot |
 
 ## What's Included
 
@@ -151,11 +151,11 @@ Optional supervisor configs are generated at runtime in `/etc/supervisor/laravel
 
 Every supervisor program lives in its own `.conf` file across three include directories:
 
-| Directory | Purpose | How to customize |
-|-----------|---------|------------------|
-| `/etc/supervisor/conf.d/` | Core services (php-fpm, nginx) | Mount a replacement file to override |
+| Directory                    | Purpose                                                             | How to customize                                 |
+|------------------------------|---------------------------------------------------------------------|--------------------------------------------------|
+| `/etc/supervisor/conf.d/`    | Core services (php-fpm, nginx)                                      | Mount a replacement file to override             |
 | `/etc/supervisor/laravel.d/` | Queue, scheduler, horizon (auto-generated from `ENABLE_*` env vars) | Use env vars, or disable them and mount your own |
-| `/etc/supervisor/custom.d/` | Empty — for your own programs | Mount a directory or individual files |
+| `/etc/supervisor/custom.d/`  | Empty — for your own programs                                       | Mount a directory or individual files            |
 
 **Examples:**
 
