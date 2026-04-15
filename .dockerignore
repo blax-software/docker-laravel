@@ -1,0 +1,13 @@
+.git
+.github
+.gitignore
+*.md
+!README.md
+LICENSE
+docker-bake.hcl
+scripts/build.sh
+scripts/publish.sh
+docker-compose*.yml
+.env*
+.idea
+.vscode

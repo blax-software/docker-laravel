@@ -1,0 +1,145 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+echo "=========================================="
+echo "  docker-laravel container starting"
+echo "=========================================="
+echo "Date:      $(date)"
+echo "Hostname:  $(hostname)"
+echo "PHP:       $(php -r 'echo PHP_VERSION;')"
+echo "Node:      $(node --version 2>/dev/null || echo 'n/a')"
+echo "Composer:  $(composer --version --no-ansi 2>/dev/null | head -1 || echo 'n/a')"
+echo "=========================================="
+
+start_ts=$(date +%s)
+
+# ---------------------------------------------------------------------------
+# 1) Writable directories
+# ---------------------------------------------------------------------------
+echo "[1/5] Preparing writable dirs..."
+
+mkdir -p /.composer && chmod 0777 /.composer 2>/dev/null || true
+
+if [ "${ENABLE_LARAVEL_PERMS:-0}" = "1" ]; then
+    echo "  ENABLE_LARAVEL_PERMS=1 — applying targeted writable-dir fixes"
+    for p in /var/www/html/storage /var/www/html/bootstrap/cache; do
+        if [ -d "$p" ]; then
+            chmod ug+rwX "$p" 2>/dev/null || true
+        else
+            echo "  WARN: $p does not exist"
+        fi
+    done
+else
+    echo "  Skipping Laravel chmod (set ENABLE_LARAVEL_PERMS=1 to enable)"
+fi
+
+mkdir -p /var/log/supervisor /var/log/nginx /var/log/php
+
+# ---------------------------------------------------------------------------
+# 2) Generate optional supervisor programs based on ENABLE_* env vars
+# ---------------------------------------------------------------------------
+echo "[2/5] Configuring services..."
+
+echo "  Core programs (conf.d/):"
+for f in /etc/supervisor/conf.d/*.conf; do
+    [ -f "$f" ] && echo "    $(basename "$f")"
+done
+
+LARAVEL_D="/etc/supervisor/laravel.d"
+rm -f "${LARAVEL_D}"/*.conf 2>/dev/null || true
+
+if [ "${ENABLE_QUEUE:-false}" = "true" ]; then
+    echo "  + queue worker enabled"
+    cat > "${LARAVEL_D}/queue.conf" <<'CONF'
+[program:queue]
+command=/usr/local/bin/php -d variables_order=EGPCS /var/www/html/artisan queue:work --tries=3 --sleep=5 --timeout=600 --max-jobs=500 --max-time=3600
+autostart=true
+autorestart=true
+user=www-data
+priority=20
+startsecs=5
+stdout_logfile=/proc/1/fd/1
+stdout_logfile_maxbytes=0
+stderr_logfile=/proc/1/fd/2
+stderr_logfile_maxbytes=0
+CONF
+fi
+
+if [ "${ENABLE_SCHEDULER:-false}" = "true" ]; then
+    echo "  + scheduler enabled"
+    cat > "${LARAVEL_D}/scheduler.conf" <<'CONF'
+[program:scheduler]
+command=/usr/local/bin/php -d variables_order=EGPCS /var/www/html/artisan schedule:work
+autostart=true
+autorestart=true
+user=www-data
+priority=20
+startsecs=5
+stdout_logfile=/proc/1/fd/1
+stdout_logfile_maxbytes=0
+stderr_logfile=/proc/1/fd/2
+stderr_logfile_maxbytes=0
+CONF
+fi
+
+if [ "${ENABLE_HORIZON:-false}" = "true" ]; then
+    echo "  + Horizon enabled"
+    cat > "${LARAVEL_D}/horizon.conf" <<'CONF'
+[program:horizon]
+command=/usr/local/bin/php -d variables_order=EGPCS /var/www/html/artisan horizon
+autostart=true
+autorestart=true
+user=www-data
+priority=20
+startsecs=5
+stdout_logfile=/proc/1/fd/1
+stdout_logfile_maxbytes=0
+stderr_logfile=/proc/1/fd/2
+stderr_logfile_maxbytes=0
+CONF
+fi
+
+# Report custom programs
+CUSTOM_COUNT=$(find /etc/supervisor/custom.d/ -name '*.conf' 2>/dev/null | wc -l)
+if [ "$CUSTOM_COUNT" -gt 0 ]; then
+    echo "  Custom programs (custom.d/):"
+    for f in /etc/supervisor/custom.d/*.conf; do
+        [ -f "$f" ] && echo "    $(basename "$f")"
+    done
+fi
+
+# ---------------------------------------------------------------------------
+# 3) Config tests
+# ---------------------------------------------------------------------------
+echo "[3/5] Testing configs..."
+
+php-fpm -t 2>&1 || echo "  PHP-FPM config test failed (continuing)"
+nginx -t  2>&1 || echo "  Nginx config test failed (continuing)"
+
+# ---------------------------------------------------------------------------
+# 4) Diagnostics
+# ---------------------------------------------------------------------------
+echo "[4/5] Environment"
+echo "  APP_ENV=${APP_ENV:-<unset>}"
+echo "  APP_DEBUG=${APP_DEBUG:-<unset>}"
+echo "  ENABLE_QUEUE=${ENABLE_QUEUE:-false}"
+echo "  ENABLE_SCHEDULER=${ENABLE_SCHEDULER:-false}"
+echo "  ENABLE_HORIZON=${ENABLE_HORIZON:-false}"
+
+end_ts=$(date +%s)
+echo "  Preflight took $((end_ts - start_ts))s"
+
+# ---------------------------------------------------------------------------
+# 5) Launch
+# ---------------------------------------------------------------------------
+if [ $# -gt 0 ]; then
+    echo "[5/5] Running ad-hoc command: $*"
+    php-fpm -D
+    sleep 1
+    nginx
+    exec gosu 1000 "$@"
+else
+    echo "[5/5] Starting Supervisord..."
+    echo "=========================================="
+    exec /usr/bin/supervisord -c /etc/supervisor/supervisord.conf
+fi
