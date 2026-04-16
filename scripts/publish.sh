@@ -3,31 +3,28 @@
 # publish.sh — Push all built images to a container registry
 #
 # Usage:
-#   REGISTRY=ghcr.io/myorg ./publish.sh          # push all versions
-#   REGISTRY=ghcr.io/myorg ./publish.sh 8.4       # push only PHP 8.4 tags
-#   REGISTRY=ghcr.io/myorg ./publish.sh 8.3 8.4   # push PHP 8.3 + 8.4
+#   ./publish.sh                                  # push all (IMAGE_NAME must include namespace)
+#   ./publish.sh 8.4                              # push only PHP 8.4 tags
+#   REGISTRY=ghcr.io/myorg ./publish.sh           # re-tag to different registry and push
 #
 # Environment:
-#   REGISTRY     — registry prefix     (REQUIRED, e.g. ghcr.io/myorg)
-#   IMAGE_NAME   — image name          (default: docker-laravel)
+#   IMAGE_NAME   — image name          (default: blaxsoftware/laravel)
+#   REGISTRY     — optional registry   (if set, images are re-tagged from IMAGE_NAME to REGISTRY/IMAGE_NAME)
 #   DRY_RUN      — set to 1 to print commands without executing
 # ===========================================================================
 set -euo pipefail
 
-if [ -z "${REGISTRY:-}" ]; then
-    echo "ERROR: REGISTRY is required."
-    echo ""
-    echo "Usage: REGISTRY=ghcr.io/myorg ./publish.sh [php_versions...]"
-    echo ""
-    echo "Examples:"
-    echo "  REGISTRY=ghcr.io/myorg ./publish.sh"
-    echo "  REGISTRY=docker.io/myuser ./publish.sh 8.4"
-    exit 1
-fi
+IMAGE_NAME="${IMAGE_NAME:-blaxsoftware/laravel}"
 
-IMAGE_NAME="${IMAGE_NAME:-docker-laravel}"
-LOCAL="${IMAGE_NAME}"
-REMOTE="${REGISTRY}/${IMAGE_NAME}"
+# If REGISTRY is set, push to REGISTRY/<basename of IMAGE_NAME>; otherwise push IMAGE_NAME directly
+if [ -n "${REGISTRY:-}" ]; then
+    BASE_NAME="$(basename "$IMAGE_NAME")"
+    LOCAL="${IMAGE_NAME}"
+    REMOTE="${REGISTRY}/${BASE_NAME}"
+else
+    LOCAL="${IMAGE_NAME}"
+    REMOTE="${IMAGE_NAME}"
+fi
 
 # ---------------------------------------------------------------------------
 # PHP → Laravel version mapping (must match build.sh)
@@ -130,4 +127,4 @@ echo ""
 echo "==========================================="
 echo "  Publish complete"
 echo "==========================================="
-echo "Pushed ${PUSHED} tags to ${REGISTRY}/${IMAGE_NAME}"
+echo "Pushed ${PUSHED} tags to ${REMOTE}"

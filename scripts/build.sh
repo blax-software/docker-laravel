@@ -14,7 +14,7 @@
 # ===========================================================================
 set -euo pipefail
 
-IMAGE_NAME="${IMAGE_NAME:-docker-laravel}"
+IMAGE_NAME="${IMAGE_NAME:-blaxsoftware/laravel}"
 NODE_MAJOR="${NODE_MAJOR:-22}"
 
 # ---------------------------------------------------------------------------
