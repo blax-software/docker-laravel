@@ -11,10 +11,12 @@
 #   IMAGE_NAME   — image name          (default: blaxsoftware/laravel)
 #   REGISTRY     — optional registry   (if set, images are re-tagged from IMAGE_NAME to REGISTRY/IMAGE_NAME)
 #   DRY_RUN      — set to 1 to print commands without executing
+#   FAIL_ON_MISSING — set to 1 to exit when a local source image is missing
 # ===========================================================================
 set -euo pipefail
 
 IMAGE_NAME="${IMAGE_NAME:-blaxsoftware/laravel}"
+FAIL_ON_MISSING="${FAIL_ON_MISSING:-0}"
 
 # If REGISTRY is set, push to REGISTRY/<basename of IMAGE_NAME>; otherwise push IMAGE_NAME directly
 if [ -n "${REGISTRY:-}" ]; then
@@ -89,6 +91,7 @@ tag_and_push() {
 # ---------------------------------------------------------------------------
 TOTAL=0
 PUSHED=0
+SKIPPED=()
 
 for PHP_VERSION in "${PUSH_VERSIONS[@]}"; do
     echo ""
@@ -96,26 +99,38 @@ for PHP_VERSION in "${PUSH_VERSIONS[@]}"; do
     echo "  Pushing PHP ${PHP_VERSION}"
     echo "==========================================="
 
+    SOURCE_TAG="${LOCAL}:php${PHP_VERSION}"
+    if ! docker image inspect "${SOURCE_TAG}" >/dev/null 2>&1; then
+        if [ "${FAIL_ON_MISSING}" = "1" ]; then
+            echo "ERROR: Missing local image ${SOURCE_TAG}"
+            exit 1
+        fi
+
+        echo "Skipping PHP ${PHP_VERSION}: missing local image ${SOURCE_TAG}"
+        SKIPPED+=("$PHP_VERSION")
+        continue
+    fi
+
     # Base PHP tag
-    tag_and_push "${LOCAL}:php${PHP_VERSION}" "${REMOTE}:php${PHP_VERSION}"
+    tag_and_push "${SOURCE_TAG}" "${REMOTE}:php${PHP_VERSION}"
     TOTAL=$((TOTAL + 1)); PUSHED=$((PUSHED + 1))
 
     # Laravel combo tags
     LARAVEL_VERSIONS="${PHP_LARAVEL_MAP[$PHP_VERSION]}"
     for LV in $LARAVEL_VERSIONS; do
-        tag_and_push "${LOCAL}:php${PHP_VERSION}" "${REMOTE}:laravel${LV}-php${PHP_VERSION}"
+        tag_and_push "${SOURCE_TAG}" "${REMOTE}:laravel${LV}-php${PHP_VERSION}"
         TOTAL=$((TOTAL + 1)); PUSHED=$((PUSHED + 1))
 
         # Bare laravelN tag
         if [ "${LARAVEL_RECOMMENDED_PHP[$LV]}" = "$PHP_VERSION" ]; then
-            tag_and_push "${LOCAL}:php${PHP_VERSION}" "${REMOTE}:laravel${LV}"
+            tag_and_push "${SOURCE_TAG}" "${REMOTE}:laravel${LV}"
             TOTAL=$((TOTAL + 1)); PUSHED=$((PUSHED + 1))
         fi
     done
 
     # latest
     if [ "$PHP_VERSION" = "$LATEST_PHP" ]; then
-        tag_and_push "${LOCAL}:php${PHP_VERSION}" "${REMOTE}:latest"
+        tag_and_push "${SOURCE_TAG}" "${REMOTE}:latest"
         TOTAL=$((TOTAL + 1)); PUSHED=$((PUSHED + 1))
     fi
 done
@@ -128,3 +143,7 @@ echo "==========================================="
 echo "  Publish complete"
 echo "==========================================="
 echo "Pushed ${PUSHED} tags to ${REMOTE}"
+
+if [ ${#SKIPPED[@]} -gt 0 ]; then
+    echo "Skipped PHP versions (missing local images): ${SKIPPED[*]}"
+fi
