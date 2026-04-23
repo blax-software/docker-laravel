@@ -20,6 +20,15 @@ echo "[1/5] Preparing writable dirs..."
 
 mkdir -p /.composer && chmod 0777 /.composer 2>/dev/null || true
 
+if command -v git >/dev/null 2>&1; then
+    if git config --system --get-all safe.directory 2>/dev/null | grep -Fxq "/var/www/html"; then
+        echo "  git safe.directory already includes /var/www/html"
+    else
+        git config --system --add safe.directory /var/www/html 2>/dev/null || true
+        echo "  Added git safe.directory: /var/www/html"
+    fi
+fi
+
 if [ "${ENABLE_LARAVEL_PERMS:-0}" = "1" ]; then
     echo "  ENABLE_LARAVEL_PERMS=1 — applying targeted writable-dir fixes"
     for p in /var/www/html/storage /var/www/html/bootstrap/cache; do
