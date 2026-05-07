@@ -29,20 +29,74 @@ if command -v git >/dev/null 2>&1; then
     fi
 fi
 
-if [ "${ENABLE_LARAVEL_PERMS:-0}" = "1" ]; then
-    echo "  ENABLE_LARAVEL_PERMS=1 — applying targeted writable-dir fixes"
-    for p in /var/www/html/storage /var/www/html/bootstrap/cache; do
-        if [ -d "$p" ]; then
-            chmod ug+rwX "$p" 2>/dev/null || true
-        else
-            echo "  WARN: $p does not exist"
-        fi
-    done
+# ENABLE_LARAVEL_PERMS defaults to 1 — set to 0 to opt out (e.g. when
+# you manage perms yourself with a custom entrypoint or volume init).
+# The fix is idempotent and cheap on already-correct trees, so leaving
+# it on is the right default.
+if [ "${ENABLE_LARAVEL_PERMS:-1}" != "0" ]; then
+    echo "  Applying Laravel writable-dir fixes (ENABLE_LARAVEL_PERMS=${ENABLE_LARAVEL_PERMS:-1})"
+
+    APP_ROOT="/var/www/html"
+
+    if [ -d "$APP_ROOT/storage" ] || [ -d "$APP_ROOT/bootstrap/cache" ]; then
+        # Pre-create the subdirs that ship empty in fresh Laravel repos
+        # plus the ones common Blax packages need (workkit:db:backup writes
+        # here). Doing it once at boot — as root — means whichever artisan
+        # command runs first never creates them owned by the wrong user.
+        mkdir -p \
+            "$APP_ROOT/storage/app/public" \
+            "$APP_ROOT/storage/app/private" \
+            "$APP_ROOT/storage/framework/cache/data" \
+            "$APP_ROOT/storage/framework/sessions" \
+            "$APP_ROOT/storage/framework/views" \
+            "$APP_ROOT/storage/framework/testing" \
+            "$APP_ROOT/storage/logs" \
+            "$APP_ROOT/storage/backups" \
+            "$APP_ROOT/bootstrap/cache" \
+            2>/dev/null || true
+
+        # Recursive chown so any stray files written earlier as the wrong
+        # user (root, nobody, …) get repaired. chown is fast on already-
+        # correct trees — pure stat, no I/O writes.
+        chown -R www-data:www-data "$APP_ROOT/storage" "$APP_ROOT/bootstrap/cache" 2>/dev/null || true
+
+        # ug+rwX gives both owner and group write; capital X only adds +x
+        # on directories. SGID on the dirs (g+s) makes new files inherit
+        # the www-data group — so a file written by a sidecar container
+        # running as a different UID still ends up group-writable.
+        chmod -R ug+rwX "$APP_ROOT/storage" "$APP_ROOT/bootstrap/cache" 2>/dev/null || true
+        find "$APP_ROOT/storage" "$APP_ROOT/bootstrap/cache" -type d -exec chmod g+s {} + 2>/dev/null || true
+    else
+        echo "  WARN: $APP_ROOT/storage and $APP_ROOT/bootstrap/cache do not exist (volume not mounted yet?)"
+    fi
 else
-    echo "  Skipping Laravel chmod (set ENABLE_LARAVEL_PERMS=1 to enable)"
+    echo "  Skipping Laravel writable-dir fixes (ENABLE_LARAVEL_PERMS=0)"
 fi
 
 mkdir -p /var/log/supervisor /var/log/nginx /var/log/php
+
+# ---------------------------------------------------------------------------
+# 1b) MySQL/MariaDB client defaults
+# ---------------------------------------------------------------------------
+# Self-hosted Laravel stacks typically talk to a MySQL container on a
+# private docker network. Modern mysql/mariadb server images ship a
+# self-signed cert by default, and modern clients auto-enable
+# ssl-verify-server-cert when a password is passed on argv (as Laravel's
+# `php artisan db` does) — which then fails with
+# "TLS/SSL error: self-signed certificate in certificate chain".
+#
+# Disabling verification here keeps the connection encrypted (the client
+# still negotiates TLS) but skips the chain check — the right tradeoff
+# for in-cluster traffic where the network is the trust boundary.
+# Override per host: set MYSQL_CLIENT_VERIFY=ON, or mount your own
+# /etc/mysql/conf.d/*.cnf with stricter settings (later files override
+# earlier ones in lexical order).
+mkdir -p /etc/mysql/conf.d
+cat > /etc/mysql/conf.d/00-laravel-client.cnf <<EOF
+[client]
+ssl-verify-server-cert=${MYSQL_CLIENT_VERIFY:-OFF}
+EOF
+chmod 0644 /etc/mysql/conf.d/00-laravel-client.cnf
 
 # ---------------------------------------------------------------------------
 # 2) Generate optional supervisor programs based on ENABLE_* env vars
@@ -134,6 +188,8 @@ echo "  APP_DEBUG=${APP_DEBUG:-<unset>}"
 echo "  ENABLE_QUEUE=${ENABLE_QUEUE:-false}"
 echo "  ENABLE_SCHEDULER=${ENABLE_SCHEDULER:-false}"
 echo "  ENABLE_HORIZON=${ENABLE_HORIZON:-false}"
+echo "  ENABLE_LARAVEL_PERMS=${ENABLE_LARAVEL_PERMS:-1}"
+echo "  MYSQL_CLIENT_VERIFY=${MYSQL_CLIENT_VERIFY:-OFF}"
 
 end_ts=$(date +%s)
 echo "  Preflight took $((end_ts - start_ts))s"
