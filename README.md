@@ -117,12 +117,13 @@ services:
 
 ## Runtime Environment Variables
 
-| Variable               | Default | Description                                               |
-|------------------------|---------|-----------------------------------------------------------|
-| `ENABLE_QUEUE`         | `false` | Start `artisan queue:work` via supervisor                 |
-| `ENABLE_SCHEDULER`     | `false` | Start `artisan schedule:work` via supervisor              |
-| `ENABLE_HORIZON`       | `false` | Start `artisan horizon` via supervisor                    |
-| `ENABLE_LARAVEL_PERMS` | `0`     | Fix `storage/` and `bootstrap/cache/` permissions on boot |
+| Variable               | Default | Description                                                                                                                                                                                                                          |
+|------------------------|---------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `ENABLE_QUEUE`         | `false` | Start `artisan queue:work` via supervisor                                                                                                                                                                                            |
+| `ENABLE_SCHEDULER`     | `false` | Start `artisan schedule:work` via supervisor                                                                                                                                                                                         |
+| `ENABLE_HORIZON`       | `false` | Start `artisan horizon` via supervisor                                                                                                                                                                                               |
+| `ENABLE_LARAVEL_PERMS` | `1`     | Pre-create + chown -R www-data + chmod ug+rwX (with SGID) on `storage/` and `bootstrap/cache/` on every boot. Idempotent. Set to `0` to opt out.                                                                                     |
+| `MYSQL_CLIENT_VERIFY`  | `OFF`   | Whether the bundled mysql/mariadb client verifies the server cert chain. Default `OFF` is right for in-cluster MySQL with a self-signed cert (the connection is still encrypted). Set to `ON` if you connect to a real public host.  |
 
 ## What's Included
 

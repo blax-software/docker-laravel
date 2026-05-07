@@ -169,7 +169,13 @@ RUN mkdir -p /.composer && chmod 0777 /.composer
 ENV ENABLE_QUEUE=false
 ENV ENABLE_SCHEDULER=false
 ENV ENABLE_HORIZON=false
-ENV ENABLE_LARAVEL_PERMS=0
+# storage/ + bootstrap/cache/ ownership and writable-bit fixes — runs
+# every container start, idempotent. Set to "0" to opt out.
+ENV ENABLE_LARAVEL_PERMS=1
+# Self-signed certs are normal for in-cluster MySQL on a private docker
+# network; the client still negotiates TLS but skips chain verification.
+# Set to "ON" if you've mounted a real CA or run against an external host.
+ENV MYSQL_CLIENT_VERIFY=OFF
 
 EXPOSE 80
 
