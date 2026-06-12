@@ -187,3 +187,8 @@ EXPOSE 80
 HEALTHCHECK --interval=30s --timeout=10s --start-period=90s --retries=3 \
     CMD container-health
 
+# Boot supervisord (php-fpm + nginx + enabled workers) via start-container. This
+# MUST stay — without it the base php image's default entrypoint runs php-fpm
+# alone (no nginx -> port 80 unserved, no supervisord -> healthcheck fails).
+ENTRYPOINT ["start-container"]
+
