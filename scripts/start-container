@@ -118,9 +118,19 @@ if [ "${ENABLE_QUEUE:-false}" = "true" ]; then
 command=/usr/local/bin/php -d variables_order=EGPCS /var/www/html/artisan queue:work --tries=3 --sleep=5 --timeout=600 --max-jobs=500 --max-time=3600
 autostart=true
 autorestart=true
+; A few rapid boot failures (e.g. DB not ready yet) must NOT make supervisor
+; give up and mark the worker FATAL forever — that's how a queue silently dies
+; and jobs pile up. Keep retrying generously; once it stays up past startsecs
+; the counter resets, so the hourly --max-time exit never trips it.
+startretries=30
+startsecs=5
+; Graceful shutdown on deploy/restart: queue:work handles SIGTERM by finishing
+; the current job then exiting. Wait longer than --timeout before SIGKILL so an
+; in-flight job is never killed mid-write (which would fail + retry it).
+stopsignal=TERM
+stopwaitsecs=630
 user=www-data
 priority=20
-startsecs=5
 stdout_logfile=/proc/1/fd/1
 stdout_logfile_maxbytes=0
 stderr_logfile=/proc/1/fd/2
@@ -135,9 +145,12 @@ if [ "${ENABLE_SCHEDULER:-false}" = "true" ]; then
 command=/usr/local/bin/php -d variables_order=EGPCS /var/www/html/artisan schedule:work
 autostart=true
 autorestart=true
+startretries=30
+startsecs=5
+stopsignal=TERM
+stopwaitsecs=60
 user=www-data
 priority=20
-startsecs=5
 stdout_logfile=/proc/1/fd/1
 stdout_logfile_maxbytes=0
 stderr_logfile=/proc/1/fd/2
@@ -152,14 +165,31 @@ if [ "${ENABLE_HORIZON:-false}" = "true" ]; then
 command=/usr/local/bin/php -d variables_order=EGPCS /var/www/html/artisan horizon
 autostart=true
 autorestart=true
+startretries=30
+startsecs=5
+; Horizon traps SIGTERM and shuts its workers down gracefully.
+stopsignal=TERM
+stopwaitsecs=630
 user=www-data
 priority=20
-startsecs=5
 stdout_logfile=/proc/1/fd/1
 stdout_logfile_maxbytes=0
 stderr_logfile=/proc/1/fd/2
 stderr_logfile_maxbytes=0
 CONF
+fi
+
+# Loud warning for the silent-failure mode this whole section exists to prevent:
+# a database/redis queue with NO worker (or NO scheduler) means jobs/scheduled
+# tasks accumulate forever with nothing processing them — exactly how a paid
+# purchase can leave a user un-granted. `sync` is the one connection that runs
+# jobs inline, so it's the only safe one without a worker.
+QC="${QUEUE_CONNECTION:-sync}"
+if [ "${ENABLE_QUEUE:-false}" != "true" ] && [ "${ENABLE_HORIZON:-false}" != "true" ] && [ "$QC" != "sync" ] && [ "$QC" != "null" ]; then
+    echo "  !! WARNING: ENABLE_QUEUE=false but QUEUE_CONNECTION='${QC}' — queued jobs will PILE UP unprocessed (no worker). Set ENABLE_QUEUE=true, or QUEUE_CONNECTION=sync."
+fi
+if [ "${ENABLE_SCHEDULER:-false}" != "true" ]; then
+    echo "  !! WARNING: ENABLE_SCHEDULER=false — scheduled tasks (cleanups, health checks, reminders) will NOT run."
 fi
 
 # Report custom programs

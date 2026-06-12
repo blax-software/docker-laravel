@@ -154,10 +154,11 @@ RUN mkdir -p /etc/supervisor/conf.d /etc/supervisor/laravel.d /etc/supervisor/cu
              /var/log/supervisor /var/log/nginx /var/log/php
 
 # ---------------------------------------------------------------------------
-# Startup script
+# Startup script + healthcheck
 # ---------------------------------------------------------------------------
 COPY scripts/start-container /usr/local/bin/start-container
-RUN chmod +x /usr/local/bin/start-container
+COPY scripts/container-health /usr/local/bin/container-health
+RUN chmod +x /usr/local/bin/start-container /usr/local/bin/container-health
 
 # Composer cache
 RUN mkdir -p /.composer && chmod 0777 /.composer
@@ -179,5 +180,10 @@ ENV MYSQL_CLIENT_VERIFY=OFF
 
 EXPOSE 80
 
-ENTRYPOINT ["start-container"]
+# Report UNHEALTHY when an expected supervised process (php-fpm, nginx, or any
+# enabled queue/scheduler/horizon worker) is not RUNNING — so a dead worker
+# surfaces in `docker ps`/orchestration instead of silently dropping jobs.
+# start-period gives supervisord + a slow DB time to come up before counting.
+HEALTHCHECK --interval=30s --timeout=10s --start-period=90s --retries=3 \
+    CMD container-health
 

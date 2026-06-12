@@ -1,0 +1,40 @@
+#!/usr/bin/env bash
+# ===========================================================================
+# container-health — Docker HEALTHCHECK for the docker-laravel image.
+#
+# Asserts that every supervisor program that is SUPPOSED to be running (the
+# core web stack, plus whichever ENABLE_* services are on) is actually in the
+# RUNNING state. If a queue worker or scheduler has crashed and supervisor gave
+# up (FATAL), or never started, the container is reported UNHEALTHY — so a dead
+# worker is visible in `docker ps` / orchestration instead of silently letting
+# jobs pile up.
+#
+# Exit 0 = healthy, 1 = unhealthy. Used by HEALTHCHECK in the Dockerfile.
+# ===========================================================================
+set -uo pipefail
+
+# Programs that must always be up.
+expected=(php-fpm nginx)
+
+# Optional services, gated by the same env vars start-container reads.
+[ "${ENABLE_QUEUE:-false}" = "true" ]     && expected+=(queue)
+[ "${ENABLE_SCHEDULER:-false}" = "true" ] && expected+=(scheduler)
+[ "${ENABLE_HORIZON:-false}" = "true" ]   && expected+=(horizon)
+
+status="$(supervisorctl status 2>/dev/null)"
+if [ -z "$status" ]; then
+    echo "UNHEALTHY: supervisorctl returned no status (supervisord down?)"
+    exit 1
+fi
+
+rc=0
+for p in "${expected[@]}"; do
+    # supervisorctl prints e.g. "queue   RUNNING   pid 123, uptime 0:10:00"
+    if ! echo "$status" | grep -qE "^${p}([:_][^ ]*)?[[:space:]]+RUNNING"; then
+        line="$(echo "$status" | grep -E "^${p}([:_][^ ]*)?[[:space:]]" || echo "${p}  (missing)")"
+        echo "UNHEALTHY: '${p}' is not RUNNING -> ${line}"
+        rc=1
+    fi
+done
+
+exit $rc
