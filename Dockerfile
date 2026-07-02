@@ -35,6 +35,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libpq-dev \
     # ImageMagick
     libmagickwand-dev \
+    # librsvg: crisp SVG->PDF/PNG (rsvg-convert) + Imagick's preferred SVG delegate
+    librsvg2-bin librsvg2-2 \
     # Nginx + headers-more module
     nginx libnginx-mod-http-headers-more-filter \
     # Database clients
