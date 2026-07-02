@@ -26,7 +26,7 @@ RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 # ---------------------------------------------------------------------------
 RUN apt-get update && apt-get install -y --no-install-recommends \
     gnupg gosu curl wget ca-certificates zip unzip git \
-    supervisor sqlite3 libcap2-bin python3 pkg-config \
+    supervisor tini sqlite3 libcap2-bin python3 pkg-config \
     # GD
     libfreetype6-dev libjpeg62-turbo-dev libpng-dev libwebp-dev \
     # PHP extension libs
@@ -190,5 +190,14 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=90s --retries=3 \
 # Boot supervisord (php-fpm + nginx + enabled workers) via start-container. This
 # MUST stay — without it the base php image's default entrypoint runs php-fpm
 # alone (no nginx -> port 80 unserved, no supervisord -> healthcheck fails).
-ENTRYPOINT ["start-container"]
+#
+# tini is PID 1 (not supervisord directly) purely as a defense-in-depth zombie
+# reaper: any process reparented to PID 1 — e.g. a child orphaned by a program
+# that forks and exits without waiting (the laravel-websockets fork-per-message
+# server on restart) — is reaped by tini. supervisord already reaps its own
+# tree and reparented orphans, so this is belt-and-suspenders that mirrors the
+# docker-bastion image. No `-g`: tini forwards SIGTERM to its direct child
+# (supervisord), preserving supervisord's ordered, per-program graceful stop
+# (queue stopwaitsecs, etc.). No `-s`: tini is already PID 1.
+ENTRYPOINT ["/usr/bin/tini", "--", "start-container"]
 
