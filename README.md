@@ -73,6 +73,19 @@ docker buildx bake
 docker buildx bake active
 ```
 
+### Before you push a rebuilt image
+
+The base tag `php:<version>-fpm` isn't pinned, and a PECL extension that fails to
+build only prints a `NOTICE` (Dockerfile, the `pecl install … || echo` lines). So a
+rebuild can succeed without redis or imagick, and every app on that tag breaks at
+its next restart. Before `docker push`, count the PECL extensions in the new image
+and compare with the image it replaces:
+
+```bash
+docker run --rm --entrypoint php blaxsoftware/laravel:laravel11 -m | grep -cE '^(redis|ev|igbinary|imagick)$'
+# 4 on PHP 8.4. A newer PHP may lack one by design; the count must never be lower than the previous image of the same tag.
+```
+
 ## plug-n-pray 🙏
 
 Generate a full Docker Compose boilerplate for any Laravel project:
