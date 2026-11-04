@@ -131,6 +131,7 @@ services:
 - **PECL**: redis, ev, igbinary, imagick (graceful fallback if unavailable for a PHP version)
 - **OPcache** with JIT auto-enabled on PHP 8.0+
 - **Nginx** with headers-more module, optimized for Laravel
+- **X-Accel-Redirect** for files under `storage/app`: after its own access check the app answers with an empty body and `X-Accel-Redirect: /_accel/<path under storage/app>`, and nginx sends the file (Range requests, CORS headers passed on). The internal location is announced to PHP as `$_SERVER['X_ACCEL_STORAGE'] = '/_accel/'`, so an app can switch it on only when the image has it
 - **Composer** (latest)
 - **Node.js** + npm
 - **Image optimizers**: optipng, pngquant, gifsicle, webp, avif, svgo
