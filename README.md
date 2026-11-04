@@ -185,6 +185,10 @@ command=/usr/sbin/nginx -g "daemon off;"
 autostart=false
 ```
 
+## Maintainer
+
+Maintained by [Blax Software](https://www.blax.at/digital/hosting), a software practice in Austria. Bugs and pull requests go to this repository; for project work, write to office@blax.at.
+
 ## Star History
 
 <a href="https://www.star-history.com/?repos=blax-software%2Fdocker-laravel&type=date&legend=top-left">
