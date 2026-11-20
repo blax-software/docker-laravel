@@ -28,6 +28,7 @@ declare -A PHP_LARAVEL_MAP=(
     ["8.3"]="10 11 12 13"
     ["8.4"]="11 12 13"
     ["8.5"]="12 13"
+    ["8.6"]="13"
 )
 
 # Recommended (highest) PHP version per Laravel version → gets the bare `laravelN` tag
@@ -42,7 +43,7 @@ declare -A LARAVEL_RECOMMENDED_PHP=(
 # Which PHP version gets the `latest` tag
 LATEST_PHP="8.4"
 
-ALL_PHP_VERSIONS=("7.4" "8.0" "8.1" "8.2" "8.3" "8.4" "8.5")
+ALL_PHP_VERSIONS=("7.4" "8.0" "8.1" "8.2" "8.3" "8.4" "8.5" "8.6")
 
 # ---------------------------------------------------------------------------
 # Determine which versions to build

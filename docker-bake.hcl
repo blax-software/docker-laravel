@@ -106,16 +106,26 @@ target "php-85" {
   tags = [tag("8.5")]
 }
 
+target "php-86" {
+  context    = "."
+  dockerfile = "Dockerfile"
+  args = {
+    PHP_VERSION = "8.6"
+    NODE_MAJOR  = "${NODE_MAJOR}"
+  }
+  tags = [tag("8.6")]
+}
+
 # ---------------------------------------------------------------------------
 # Groups
 # ---------------------------------------------------------------------------
 
 group "default" {
-  targets = ["php-74", "php-80", "php-81", "php-82", "php-83", "php-84", "php-85"]
+  targets = ["php-74", "php-80", "php-81", "php-82", "php-83", "php-84", "php-85", "php-86"]
 }
 
 group "active" {
-  targets = ["php-82", "php-83", "php-84", "php-85"]
+  targets = ["php-82", "php-83", "php-84", "php-85", "php-86"]
 }
 
 group "legacy" {

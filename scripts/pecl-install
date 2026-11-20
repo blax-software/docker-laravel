@@ -1,0 +1,15 @@
+#!/bin/sh
+# pecl-install <extension>: build, install and enable a PECL extension.
+# Uses `pecl` where the PHP image ships it. PHP 8.6+ images no longer include PEAR/pecl,
+# so there it builds the newest release from the pecl.php.net source tarball instead.
+set -e
+ext="$1"
+if command -v pecl >/dev/null 2>&1; then
+    pecl install "$ext"
+else
+    dir="$(mktemp -d)"
+    curl -fsSL "https://pecl.php.net/get/$ext" | tar xz -C "$dir" --strip-components=1
+    (cd "$dir" && phpize && ./configure && make -j"$(nproc)" && make install)
+    rm -rf "$dir"
+fi
+docker-php-ext-enable "$ext"

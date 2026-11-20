@@ -6,7 +6,7 @@ A **runtime environment** for Laravel applications — not Laravel itself.
 
 This image provides everything a Laravel app needs to run: PHP-FPM, Nginx, Composer, Node.js, and a curated set of PHP extensions and system tools. Mount your Laravel project at `/var/www/html` and you're ready to go.
 
-Built for PHP 7.4 through 8.5, covering Laravel 9 – 13.
+Built for PHP 7.4 through 8.6, covering Laravel 9 – 13.
 
 ## Available Tags
 
@@ -21,6 +21,7 @@ Built for PHP 7.4 through 8.5, covering Laravel 9 – 13.
 | `blaxsoftware/laravel:php8.3` | 8.3 | 10, 11, 12, 13       |
 | `blaxsoftware/laravel:php8.4` | 8.4 | 11, 12, 13           |
 | `blaxsoftware/laravel:php8.5` | 8.5 | 12, 13               |
+| `blaxsoftware/laravel:php8.6` | 8.6 | 13                   |
 | `blaxsoftware/laravel:latest` | 8.4 | (alias for php8.4)   |
 
 ### By Laravel version (recommended PHP)
@@ -52,6 +53,7 @@ blaxsoftware/laravel:laravel12-php8.5
 blaxsoftware/laravel:laravel13-php8.3
 blaxsoftware/laravel:laravel13-php8.4
 blaxsoftware/laravel:laravel13-php8.5
+blaxsoftware/laravel:laravel13-php8.6
 ```
 
 ## Quick Start
@@ -141,7 +143,7 @@ services:
 ## What's Included
 
 - **PHP-FPM** with extensions: pdo_mysql, pdo_pgsql, mysqli, mbstring, exif, pcntl, bcmath, gd (freetype + jpeg + webp), sockets, zip, xml, soap, intl, opcache
-- **PECL**: redis, ev, igbinary, imagick (graceful fallback if unavailable for a PHP version)
+- **PECL**: redis, ev, igbinary, imagick (graceful fallback if unavailable for a PHP version). PHP 8.6 images ship without `pecl`, so `scripts/pecl-install` builds the newest pecl.php.net release from source. On 2026-11-20 (PHP 8.6.0, one day old) only `ev` compiles; redis, igbinary and imagick still use C APIs 8.6 removed. Apps on `php8.6` use predis until a rebuild picks up phpredis.
 - **OPcache** with JIT auto-enabled on PHP 8.0+
 - **Nginx** with headers-more module, optimized for Laravel
 - **X-Accel-Redirect** for files under `storage/app`: after its own access check the app answers with an empty body and `X-Accel-Redirect: /_accel/<path under storage/app>`, and nginx sends the file (Range requests, CORS headers passed on). The internal location is announced to PHP as `$_SERVER['X_ACCEL_STORAGE'] = '/_accel/'`, so an app can switch it on only when the image has it

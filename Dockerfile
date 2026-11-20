@@ -2,7 +2,7 @@
 # docker-laravel — Multi-version PHP + Nginx image for Laravel
 #
 # Build args:
-#   PHP_VERSION   — 7.4 | 8.0 | 8.1 | 8.2 | 8.3 | 8.4 | 8.5  (default: 8.4)
+#   PHP_VERSION   — 7.4 | 8.0 | 8.1 | 8.2 | 8.3 | 8.4 | 8.5 | 8.6  (default: 8.4)
 #   NODE_MAJOR    — Node.js major version                        (default: 22)
 # ===========================================================================
 ARG PHP_VERSION=8.4
@@ -48,13 +48,15 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # ---------------------------------------------------------------------------
 # PHP extensions
 # ---------------------------------------------------------------------------
-# GD configure flags changed between PHP 7.x and 8.0
+# GD configure flags changed between PHP 7.x and 8.0. Since PHP 8.5 OPcache is built
+# into PHP itself (already loaded in php:8.5-fpm and later), so it is only built before.
 RUN PHP_MAJOR=$(php -r "echo PHP_MAJOR_VERSION;") && \
     if [ "$PHP_MAJOR" -ge 8 ]; then \
         docker-php-ext-configure gd --with-freetype --with-jpeg --with-webp; \
     else \
         docker-php-ext-configure gd --with-freetype-dir=/usr --with-jpeg-dir=/usr --with-webp-dir=/usr; \
     fi && \
+    OPCACHE_EXT=$(php -m | grep -q '^Zend OPcache$' || echo opcache) && \
     docker-php-ext-install -j$(nproc) \
         pdo_mysql \
         pdo_pgsql \
@@ -69,13 +71,14 @@ RUN PHP_MAJOR=$(php -r "echo PHP_MAJOR_VERSION;") && \
         xml \
         soap \
         intl \
-        opcache
+        $OPCACHE_EXT
 
-# PECL extensions (fail gracefully for bleeding-edge PHP)
-RUN pecl install redis   && docker-php-ext-enable redis   || echo "NOTICE: redis unavailable for PHP ${PHP_VERSION}"
-RUN pecl install ev      && docker-php-ext-enable ev      || echo "NOTICE: ev unavailable for PHP ${PHP_VERSION}"
-RUN pecl install igbinary && docker-php-ext-enable igbinary || echo "NOTICE: igbinary unavailable for PHP ${PHP_VERSION}"
-RUN pecl install imagick && docker-php-ext-enable imagick || echo "NOTICE: imagick unavailable for PHP ${PHP_VERSION}"
+# PECL extensions (fail gracefully for bleeding-edge PHP; see scripts/pecl-install)
+COPY scripts/pecl-install /usr/local/bin/pecl-install
+RUN pecl-install redis    || echo "NOTICE: redis unavailable for PHP ${PHP_VERSION}"
+RUN pecl-install ev       || echo "NOTICE: ev unavailable for PHP ${PHP_VERSION}"
+RUN pecl-install igbinary || echo "NOTICE: igbinary unavailable for PHP ${PHP_VERSION}"
+RUN pecl-install imagick  || echo "NOTICE: imagick unavailable for PHP ${PHP_VERSION}"
 
 # ---------------------------------------------------------------------------
 # OPcache configuration (JIT enabled automatically for PHP 8.0+)
